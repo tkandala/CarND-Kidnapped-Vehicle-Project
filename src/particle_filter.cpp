@@ -84,7 +84,16 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
 
-
+  for (int i = 0; i < observations.size(); i++){
+    double closest_distance = 999999999999;
+    for (int j = 0; j < predicted.size(); j++){
+      double distance = sqrt((predicted[j].x - observations[i].x)*(predicted[j].x - observations[i].x) + (predicted[j].y - observations[i].y)*(predicted[j].y - observations[i].y));
+      if (distance <= closest_distance){
+        observations[i].id = predicted[j].id;
+        closest_distance = distance;
+      }
+    }
+  }
 
 }
 
@@ -129,6 +138,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     std:vector<LandmarkObs> predicted;
     LandmarkObs predicted_landmark;
     default_random_engine gen;
+    int landmark_index = 0;
     for (int k = 0; k < map_landmarks.landmark_list.size(); k++){
       normal_distribution<double> dist_x(map_landmarks.landmark_list[k].x_f, std_landmark[0]);
       normal_distribution<double> dist_y(map_landmarks.landmark_list[k].y_f, std_landmark[1]);
@@ -138,12 +148,33 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
       double distance = sqrt((predicted_landmark.x - particle.x)*(predicted_landmark.x - particle.x) + (predicted_landmark.y - particle.y)*(predicted_landmark.y - particle.y));
       if (distance <= sensor_range){
+        predicted_landmark.id = landmark_index;
+        landmark_index++;
         predicted.push_back(predicted_landmark);
       }
     }
 
     // (4)
     dataAssociation(predicted, observations_map);
+
+    // (5)
+    double particle_weight = 1;
+    for (int l = 0; l < observations_map.size(); l++) {
+      LandmarkObs observation = observations_map[l];
+
+      // Calculate normalization term
+      double guass_norm = (1/(2 * M_PI * std_landmark[0] * std_landmark[1]));
+
+      // Calculate exponent
+      double exponent = ((observation.x - predicted[observation.id].x)*(observation.x - predicted[observation.id].x)/(2 * std_landmark[0] * std_landmark[0])) + ((observation.y - predicted[observation.id].y)*(observation.y - predicted[observation.id].y)/(2 * std_landmark[1] * std_landmark[1]));
+
+      // Calculate weight using normalization terms and exponent
+      double weight = guass_norm * exp(-exponent);
+      particle_weight *= weight;
+    }
+
+    particles[i].weight = particle_weight;
+
   }
 
 }
