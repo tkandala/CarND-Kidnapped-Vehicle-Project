@@ -177,12 +177,40 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
   }
 
+  // Normalize weights
+  double total_weight = 0;
+  for (int i =0; i < num_particles; i++){
+    total_weight += particles[i].weight;
+  }
+  for (int n=0; n < num_particles; n++){
+    particles[n].weight = particles[n].weight / total_weight;
+  }
+
 }
 
 void ParticleFilter::resample() {
 	// TODO: Resample particles with replacement with probability proportional to their weight. 
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
+
+  default_random_engine gen;
+
+  std::vector<double> weights;
+  for (int i =0; i< num_particles; i++){
+    weights.push_back(particles[i].weight);
+  }
+
+  // Create the distribution with those weights
+  std::discrete_distribution<> d(weights.begin(), weights.end());
+
+  std::vector<Particle> particles_resampled;
+
+  for (int i =0; i< num_particles; ++i){
+    int number = d(gen);
+    particles_resampled.push_back(particles[number]);
+  }
+
+  particles = particles_resampled;
 
 }
 
