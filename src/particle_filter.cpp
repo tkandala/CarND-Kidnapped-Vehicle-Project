@@ -14,6 +14,7 @@
 #include <sstream>
 #include <string>
 #include <iterator>
+#include <array>
 
 #include "particle_filter.h"
 
@@ -25,7 +26,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
-  num_particles = 100;
+  num_particles = 1000;
   particles.reserve(num_particles);
 
   // Noise generator
@@ -53,6 +54,8 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 
+  //std::cout << "prediction()" << std::endl;
+
   Particle particle;
   default_random_engine gen;
 
@@ -74,8 +77,12 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     particles[i].x = dist_x(gen);
     particles[i].y = dist_y(gen);
     particles[i].theta = dist_theta(gen);
+
+    //std::cout << "weight" << i << " " << particles[i].weight << std::endl;
+
   }
 
+  //std::cout << "FInished prediction" << std::endl;
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
@@ -85,14 +92,20 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	//   implement this method and use it as a helper during the updateWeights phase.
 
   for (int i = 0; i < observations.size(); i++){
+    //std::cout << "Inside dataAssociation()" << std::endl;
+
     double closest_distance = 999999999999;
     for (int j = 0; j < predicted.size(); j++){
       double distance = sqrt((predicted[j].x - observations[i].x)*(predicted[j].x - observations[i].x) + (predicted[j].y - observations[i].y)*(predicted[j].y - observations[i].y));
+
+      //std::cout << "Distance " << distance << std::endl;
+
       if (distance <= closest_distance){
         observations[i].id = predicted[j].id;
         closest_distance = distance;
       }
     }
+    //std::cout << "Closest Distance " << closest_distance << std::endl;
   }
 
 }
@@ -151,6 +164,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
         predicted_landmark.id = landmark_index;
         landmark_index++;
         predicted.push_back(predicted_landmark);
+        //std::cout << "Predicted landmark (x,y) " << predicted_landmark.x << " " << predicted_landmark.y << std::endl;
       }
     }
 
@@ -162,28 +176,36 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     for (int l = 0; l < observations_map.size(); l++) {
       LandmarkObs observation = observations_map[l];
 
+      //std::cout << "Observation Predicted association id" << observation.id << std::endl;
+      //std::cout << "Observation x,y " << observation.x << "," << observation.y << std::endl;
+      //std::cout << "Predicted x,y " << predicted[observation.id].x << "," << predicted[observation.id].y << std::endl;
+
       // Calculate normalization term
       double guass_norm = (1/(2 * M_PI * std_landmark[0] * std_landmark[1]));
+
+      //std::cout << "guass_norm:" << guass_norm;
 
       // Calculate exponent
       double exponent = ((observation.x - predicted[observation.id].x)*(observation.x - predicted[observation.id].x)/(2 * std_landmark[0] * std_landmark[0])) + ((observation.y - predicted[observation.id].y)*(observation.y - predicted[observation.id].y)/(2 * std_landmark[1] * std_landmark[1]));
 
+      //std::cout << " exponent:" << exponent;
+
       // Calculate weight using normalization terms and exponent
       double weight = guass_norm * exp(-exponent);
-      particle_weight *= weight;
+
+      //std::cout << " weight:" << weight << std::endl;
+
+      // If the weight is zero then don't multiply
+      if (weight != 0){
+        //std::cout << "multiplying" << std::endl;
+        particle_weight *= weight;
+      }
     }
 
     particles[i].weight = particle_weight;
 
-  }
+    //std::cout << "Particle " << i << " weight " << particle_weight << std::endl;
 
-  // Normalize weights
-  double total_weight = 0;
-  for (int i =0; i < num_particles; i++){
-    total_weight += particles[i].weight;
-  }
-  for (int n=0; n < num_particles; n++){
-    particles[n].weight = particles[n].weight / total_weight;
   }
 
 }
@@ -193,24 +215,40 @@ void ParticleFilter::resample() {
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
-  default_random_engine gen;
+  //std::cout << "resample()" << std::endl;
 
-  std::vector<double> weights;
-  for (int i =0; i< num_particles; i++){
-    weights.push_back(particles[i].weight);
+  // Normalize weights
+  std::vector<double> weights(num_particles);
+
+  double total_weight = 0;
+  for (int i =0; i < num_particles; i++){
+    total_weight += particles[i].weight;
+  }
+  //std::cout << "Total Weight " << total_weight << std::endl;
+
+  for (int n=0; n < num_particles; n++){
+    weights[n] = particles[n].weight / total_weight;
   }
 
-  // Create the distribution with those weights
-  std::discrete_distribution<> d(weights.begin(), weights.end());
+  default_random_engine gen;
 
-  std::vector<Particle> particles_resampled;
+  // Create the distribution with those weights
+  std::discrete_distribution<> d (weights.begin(), weights.end());
+
+  //std::cout << "distribution: " << d << std::endl;
+
+  std::vector<Particle> particles_resampled(num_particles);
+  //particles_resampled.reserve(num_particles);
 
   for (int i =0; i< num_particles; ++i){
     int number = d(gen);
+    //std::cout << "number picked: " << number << std::endl;
     particles_resampled.push_back(particles[number]);
   }
 
   particles = particles_resampled;
+
+  //std::cout << "FInished resample()" << std::endl;
 
 }
 
