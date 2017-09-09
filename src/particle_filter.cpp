@@ -218,8 +218,10 @@ void ParticleFilter::resample() {
   //std::cout << "resample()" << std::endl;
 
   // Normalize weights
-  std::vector<double> weights(num_particles);
 
+  std::vector<double> jweights(num_particles);
+
+  /*
   double total_weight = 0;
   for (int i =0; i < num_particles; i++){
     total_weight += particles[i].weight;
@@ -229,24 +231,50 @@ void ParticleFilter::resample() {
   for (int n=0; n < num_particles; n++){
     weights[n] = particles[n].weight / total_weight;
   }
+   */
+
+  //std::cout << "weight " << std::endl;
+  for (int n=0; n < num_particles; n++){
+    jweights[n] = particles[n].weight;
+    //std::cout << particles[n].weight << " ";
+  }
+  //std::cout << std::endl;
 
   default_random_engine gen;
 
   // Create the distribution with those weights
-  std::discrete_distribution<> d (weights.begin(), weights.end());
+  std::discrete_distribution<> d (jweights.begin(), jweights.end());
 
   //std::cout << "distribution: " << d << std::endl;
 
   std::vector<Particle> particles_resampled(num_particles);
   //particles_resampled.reserve(num_particles);
 
+  //std::cout << "numbers picked: ";
   for (int i =0; i< num_particles; ++i){
     int number = d(gen);
-    //std::cout << "number picked: " << number << std::endl;
-    particles_resampled.push_back(particles[number]);
+    //std::cout << number << " w:" << particles[number].weight << " ";
+    particles_resampled[i] = particles[number];
   }
+  //std::cout << std::endl;
+
+  /*
+  std::cout << "weights resampled " << std::endl;
+  for (int n=0; n < num_particles; n++){
+    std::cout << particles_resampled[n].weight << " ";
+  }
+  std::cout << std::endl;
+  */
 
   particles = particles_resampled;
+
+  /*
+  std::cout << "weights final " << std::endl;
+  for (int n=0; n < num_particles; n++){
+    std::cout << particles[n].weight << " ";
+  }
+  std::cout << std::endl;
+  */
 
   //std::cout << "FInished resample()" << std::endl;
 
