@@ -62,8 +62,8 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
   for (int i = 0; i < num_particles; i++){
     particle = particles[i];
 
-    double angle1 = (particle.theta + yaw_rate * delta_t) * 180 / M_PI;
-    double angle2 = particle.theta * 180 / M_PI;
+    double angle1 = particle.theta + yaw_rate * delta_t;
+    double angle2 = particle.theta;
 
     double xf = particle.x + velocity * (sin(angle1) - sin(angle2))/yaw_rate;
     double yf = particle.y + velocity * (cos(angle2) - cos(angle1))/yaw_rate;
@@ -141,8 +141,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     // (2)
     for (int j = 0; j< observations.size(); j++){
       LandmarkObs observation = observations[j];
-      observation_map.x = particle.x + (cos(particle.theta * 180 / M_PI) * observation.x) - (sin(particle.theta * 180 / M_PI) * observation.y);
-      observation_map.y = particle.y + (sin(particle.theta * 180 / M_PI) * observation.x) + (cos(particle.theta * 180 / M_PI) * observation.y);
+      observation_map.x = particle.x + (cos(particle.theta) * observation.x) - (sin(particle.theta) * observation.y);
+      observation_map.y = particle.y + (sin(particle.theta) * observation.x) + (cos(particle.theta) * observation.y);
 
       observations_map.push_back(observation_map);
     }
