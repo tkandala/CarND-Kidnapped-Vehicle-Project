@@ -133,26 +133,26 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
   // (1)
   for (int i = 0; i < num_particles; i++){
-    std::vector<LandmarkObs> observations_map;
-    LandmarkObs observation_map;
+    std::vector<LandmarkObs> observations_map(observations.size());
 
     particle = particles[i];
 
     // (2)
     for (int j = 0; j< observations.size(); j++){
+      LandmarkObs observation_map;
       LandmarkObs observation = observations[j];
       observation_map.x = particle.x + (cos(particle.theta) * observation.x) - (sin(particle.theta) * observation.y);
       observation_map.y = particle.y + (sin(particle.theta) * observation.x) + (cos(particle.theta) * observation.y);
 
-      observations_map.push_back(observation_map);
+      observations_map[j] = observation_map;
     }
 
     // (3)
     std:vector<LandmarkObs> predicted;
-    LandmarkObs predicted_landmark;
     default_random_engine gen;
     int landmark_index = 0;
     for (int k = 0; k < map_landmarks.landmark_list.size(); k++){
+      LandmarkObs predicted_landmark;
       normal_distribution<double> dist_x(map_landmarks.landmark_list[k].x_f, std_landmark[0]);
       normal_distribution<double> dist_y(map_landmarks.landmark_list[k].y_f, std_landmark[1]);
 
@@ -196,10 +196,10 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       //std::cout << " weight:" << weight << std::endl;
 
       // If the weight is zero then don't multiply
-      if (weight != 0){
+      //if (weight != 0){
         //std::cout << "multiplying" << std::endl;
         particle_weight *= weight;
-      }
+      //}
     }
 
     particles[i].weight = particle_weight;
