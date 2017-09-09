@@ -65,8 +65,8 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     double angle1 = (particle.theta + yaw_rate * delta_t) * 180 / M_PI;
     double angle2 = particle.theta * 180 / M_PI;
 
-    double xf = particle.x + velocity * (sin(angle1 - angle2) - sin(angle1))/yaw_rate;
-    double yf = particle.y + velocity * (cos(angle1) - cos(angle1 + angle2))/yaw_rate;
+    double xf = particle.x + velocity * (sin(angle1) - sin(angle2))/yaw_rate;
+    double yf = particle.y + velocity * (cos(angle2) - cos(angle1))/yaw_rate;
     double thetaf = particle.theta + yaw_rate * delta_t;
 
     // Noise generator
