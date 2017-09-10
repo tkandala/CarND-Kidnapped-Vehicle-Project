@@ -26,7 +26,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
-  num_particles = 1000;
+  num_particles = 100;
   particles.reserve(num_particles);
 
   // Noise generator
@@ -62,12 +62,22 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
   for (int i = 0; i < num_particles; i++){
     particle = particles[i];
 
-    double angle1 = particle.theta + yaw_rate * delta_t;
-    double angle2 = particle.theta;
+    // check if yaw_rate is zero or close to zero
 
-    double xf = particle.x + velocity * (sin(angle1) - sin(angle2))/yaw_rate;
-    double yf = particle.y + velocity * (cos(angle2) - cos(angle1))/yaw_rate;
-    double thetaf = particle.theta + yaw_rate * delta_t;
+    double xf, yf, thetaf;
+
+    if (yaw_rate <= 0.0001 && yaw_rate >= -0.0001 ){
+      xf = particle.x + velocity * cos(particle.theta) * delta_t;
+      yf = particle.y + velocity * sin(particle.theta) * delta_t;
+      thetaf = particle.theta;
+    } else {
+      double angle1 = particle.theta + yaw_rate * delta_t;
+      double angle2 = particle.theta;
+
+      xf = particle.x + velocity * (sin(angle1) - sin(angle2))/yaw_rate;
+      yf = particle.y + velocity * (cos(angle2) - cos(angle1))/yaw_rate;
+      thetaf = particle.theta + yaw_rate * delta_t;
+    }
 
     // Noise generator
     normal_distribution<double> dist_x(xf, std_pos[0]);
